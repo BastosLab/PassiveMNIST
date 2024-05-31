@@ -25,12 +25,12 @@ class Sim_BMNIST():
         V : velocity
         '''
         super(Sim_BMNIST, self).__init__()
-        self.timesteps = int(timesteps)
-        self.num_digits = int(num_digits)
-        self.frame_size = int(frame_size)
+        self.timesteps = timesteps
+        self.num_digits = num_digits
+        self.frame_size = frame_size
         self.mnist_size = 28 ## by default
-        self.delta_t = float(delta_t)
-        self.chunk_size = int(chunk_size) ## datasets are dividied into pieces with this number and saved separately
+        self.delta_t = delta_t
+        self.chunk_size = chunk_size ## datasets are dividied into pieces with this number and saved separately
 
     def load_mnist(self, MNIST_DIR):
         MNIST_PATH = os.path.join(MNIST_DIR, 'train-images-idx3-ubyte.gz')
@@ -183,5 +183,6 @@ if __name__ == '__main__':
     parser.add_argument('--frame_size', default=96, help='squared size of the canvas')
     parser.add_argument('--chunk_size', default=1000, help='number of sqeuences that are stored in one single file (for the purpose of memory saving)')
     args = parser.parse_args()
-    simulator = Sim_BMNIST(int(args.timesteps), int(args.num_digits), args.frame_size, args.delta_t, args.chunk_size)
+
+    simulator = Sim_BMNIST(int(args.timesteps), int(args.num_digits), int(args.frame_size), float(args.delta_t), int(args.chunk_size))
     simulator.sim_save_data(args.num_instances, args.data_path)
