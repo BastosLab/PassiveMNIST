@@ -19,7 +19,7 @@ simulate bouncing mnist using the training dataset in mnist
 ==========
 """
 class Sim_BMNIST():
-    def __init__(self, timesteps, num_digits, frame_size, delta_t, chunk_size):
+    def __init__(self, timesteps, num_digits, frame_sizes, delta_t, chunk_size):
         '''
         X : coordinates
         V : velocity
@@ -27,7 +27,7 @@ class Sim_BMNIST():
         super(Sim_BMNIST, self).__init__()
         self.timesteps = timesteps
         self.num_digits = num_digits
-        self.frame_size = frame_size
+        self.frame_sizes = torch.tensor(frame_sizes)
         self.mnist_size = 28 ## by default
         self.delta_t = delta_t
         self.chunk_size = chunk_size ## datasets are dividied into pieces with this number and saved separately
@@ -100,15 +100,15 @@ class Sim_BMNIST():
         '''
         Get random trajectories for the digits and generate a video.
         '''
-        s_factor = self.frame_size / self.mnist_size
-        t_factor = (self.frame_size - self.mnist_size) / self.mnist_size
+        s_factors = self.frame_sizes / self.mnist_size
+        t_factors = (self.frame_sizes - self.mnist_size) / self.mnist_size
         bmnist = []
         Xs, Vs = self.sim_trajectories(num_tjs=self.num_digits)
         for k in range(self.num_digits):
             digit_image = torch.from_numpy(mnist[mnist_index[k]] / 255.0).float()
-            S = torch.Tensor([[s_factor, 0], [0, s_factor]]).repeat(self.timesteps, 1, 1)
-            Thetas = torch.cat((S, Xs[k].unsqueeze(-1) * t_factor), -1)
-            grid = affine_grid(Thetas, torch.Size((self.timesteps, 1, self.frame_size, self.frame_size)), align_corners=True)
+            S = torch.Tensor([[s_factors[0], 0], [0, s_factors[1]]]).repeat(self.timesteps, 1, 1)
+            Thetas = torch.cat((S, (Xs[k] * t_factors).unsqueeze(-1)), -1)
+            grid = affine_grid(Thetas, torch.Size((self.timesteps, 1, *self.frame_sizes)), align_corners=True)
             bmnist.append(grid_sample(digit_image.repeat(self.timesteps, 1, 1).unsqueeze(1), grid, mode='nearest', align_corners=True))
             # TJ.append(Xs[n].unsqueeze(0))
             # Init_V.append(V[0.unsqueeze()])
@@ -146,7 +146,7 @@ class Sim_BMNIST():
                 bmnists.append(bmnist.unsqueeze(0))
             mnist_indices = mnist_indices[num_this_round:]
             bmnists = torch.cat(bmnists, 0)
-            assert bmnists.shape == (num_this_round, self.timesteps, self.frame_size, self.frame_size), "ERROR! unexpected chunk shape."
+            assert bmnists.shape == (num_this_round, self.timesteps, *self.frame_sizes), "ERROR! unexpected chunk shape."
             incremental_PATH = PATH + 'ob-%d' % counter
             np.save(incremental_PATH, bmnists)
             counter += 1
@@ -176,13 +176,20 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser('Bouncing MNIST DATA')
     parser.add_argument('--num_instances', default=60000, type=int)
-    parser.add_argument('--data_path', default='../../data/bmnist/')
+    parser.add_argument('--data_path', default='../data/')
     parser.add_argument('--timesteps', default=10, help='number of video frames in one video')
     parser.add_argument('--num_digits', default=3, help='number of digitis in one video')
     parser.add_argument('--delta_t', default=0.3, help='constant velocity of the digits')
     parser.add_argument('--frame_size', default=96, help='squared size of the canvas')
+    parser.add_argument('--frame_height', default=None, help='height of the canvas')
+    parser.add_argument('--frame_width', default=None, help='width of the canvas')
     parser.add_argument('--chunk_size', default=1000, help='number of sqeuences that are stored in one single file (for the purpose of memory saving)')
     args = parser.parse_args()
+    frame_sizes = [int(args.frame_size), int(args.frame_size)]
+    if args.frame_width is not None:
+        frame_sizes[0] = int(args.frame_width)
+    if args.frame_height is not None:
+        frame_sizes[1] = int(args.frame_height)
 
-    simulator = Sim_BMNIST(int(args.timesteps), int(args.num_digits), int(args.frame_size), float(args.delta_t), int(args.chunk_size))
+    simulator = Sim_BMNIST(int(args.timesteps), int(args.num_digits), frame_sizes, float(args.delta_t), int(args.chunk_size))
     simulator.sim_save_data(args.num_instances, args.data_path)
