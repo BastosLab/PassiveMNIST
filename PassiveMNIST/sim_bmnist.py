@@ -183,7 +183,9 @@ if __name__ == '__main__':
     parser.add_argument('--frame_size', default=96, help='squared size of the canvas')
     parser.add_argument('--frame_height', default=None, help='height of the canvas')
     parser.add_argument('--frame_width', default=None, help='width of the canvas')
-    parser.add_argument('--chunk_size', default=1000, help='number of sqeuences that are stored in one single file (for the purpose of memory saving)')
+    parser.add_argument('--chunk_size', default=1000, help='number of sequences that are stored in one single file (for the purpose of memory saving)')
+    parser.add_argument('--attractor-x', default=None, help='x coordinate of point to pass through')
+    parser.add_argument('--attractor-y', default=None, help='y coordinate of point to pass through')
     args = parser.parse_args()
     frame_sizes = [int(args.frame_size), int(args.frame_size)]
     if args.frame_width is not None:
