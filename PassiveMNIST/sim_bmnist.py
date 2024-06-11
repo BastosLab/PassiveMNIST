@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import torch
 from torch.distributions.uniform import Uniform
-from torch.nn.functional import affine_grid, grid_sample
+from torch.nn.functional import affine_grid, grid_sample, normalize
 
 
 """
@@ -19,12 +19,14 @@ simulate bouncing mnist using the training dataset in mnist
 ==========
 """
 class Sim_BMNIST():
-    def __init__(self, timesteps, num_digits, frame_sizes, delta_t, chunk_size):
+    def __init__(self, timesteps, num_digits, frame_sizes, delta_t, chunk_size,
+                 attractor=None):
         '''
         X : coordinates
         V : velocity
         '''
         super(Sim_BMNIST, self).__init__()
+        self.attractor = torch.tensor(attractor) if attractor is not None else None
         self.timesteps = timesteps
         self.num_digits = num_digits
         self.frame_sizes = torch.tensor(frame_sizes)
@@ -49,11 +51,13 @@ class Sim_BMNIST():
 
     def sim_trajectory(self, init_xs):
         ''' Generate a random sequence of a MNIST digit '''
-        v_norm = Uniform(0, 1).sample() * 2 * math.pi
-        #v_norm = torch.ones(1) * 2 * math.pi
-        v_y = torch.sin(v_norm).item()
-        v_x = torch.cos(v_norm).item()
-        V0 = torch.Tensor([v_x, v_y])
+        if self.attractor is None:
+            v_norm = Uniform(0, 1).sample() * 2 * math.pi
+            v_y = torch.sin(v_norm).item()
+            v_x = torch.cos(v_norm).item()
+            V0 = torch.Tensor([v_x, v_y])
+        else:
+            V0 = normalize(self.attractor - init_xs, dim=0)
         X = torch.zeros((self.timesteps, 2))
         V = torch.zeros((self.timesteps, 2))
         X[0] = init_xs
